@@ -4,9 +4,30 @@ A two-channel signal generator with independently controllable frequency and dut
 
 The generator core runs on a 100 MHz clock, while configuration parameters are supplied from a separate, asynchronous 33 MHz clock domain. A clock-domain-crossing (CDC) mechanism transfers the parameters safely between the two domains, handling metastability and guaranteeing that all parameters for a given update are applied as one coherent set.
 
-The design is written in synthesizable VHDL (VHDL-2008) and is organized as a small hierarchy: a top-level module wiring together two signal-generator channels, a CDC arbiter, and per-domain reset synchronizers. Verification is done with self-checking testbenches at both the block level and the top level.
+The design is written in synthesizable VHDL and is organized as a small hierarchy: a top-level module wiring together two signal-generator channels, a CDC arbiter, and per-domain reset synchronizers. Verification is done with self-checking testbenches at both the block level and the top level.
 ## 2. Quick Start / How to Build and Simulate
 ## 3. Repository Structure
+```
+│   .gitignore
+│   Makefile
+│   README.md
+│
+├───build
+├───simu
+├───src
+│       cdc_arbiter.vhd
+│       reset_sync.vhd
+│       sig_generator.vhd
+│       sync_2ff.vhd
+│       two_ch_sig_generator.vhd
+│
+└───tb
+        cdc_arbiter_tb.vhd
+        reset_sync_tb.vhd
+        sig_generator_tb.vhd
+        sync_2ff_tb.vhd
+        two_ch_sig_generator_tb.vhd
+```
 ## 4. Requirements
 ### 4.1 Technical Requirements
 ### 4.2 Functional Requirements
