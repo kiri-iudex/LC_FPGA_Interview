@@ -28,6 +28,20 @@ The design is written in synthesizable VHDL and is organized as a small hierarch
         sync_2ff_tb.vhd
         two_ch_sig_generator_tb.vhd
 ```
+Source files (`src/`) and their roles:
+-   `two_ch_sig_generator.vhd` - top-level module. Instantiates two signal-generator channels, the CDC arbiter, and two reset synchronizers, and wires them together.
+-   `sig_generator.vhd` - a single PWM/frequency channel. Counter-plus-comparator core with pending/active parameter staging and boundary-aligned atomic update. Generic `P_DEFAULT` sets the reset-time period.
+-   `cdc_arbiter.vhd` - clock-domain-crossing controller. Slow-domain (33 MHz) request/acknowledge FSM plus fast-domain (100 MHz) capture logic. Carries the two channels parameters across as one coherent set and emits a single `load` pulse.
+-   `sync_2ff.vhd` - generic-free 2-flip-flop single-bit synchronizer, used for the `req`/`ack` handshake bits inside the arbiter.
+-   `reset_sync.vhd` - reset synchronizer (asynchronous assert, synchronous de-assert). One instance per clock domain.
+
+Testbenches (`tb/`):
+
+-   `two_ch_sig_generator_tb.vhd` - top-level, end-to-end, self-checking testbench (drives the commit interface, checks both channel outputs). Covers the full section-7 scenario list.
+-   `sig_generator_tb.vhd` - single-channel self-checking testbench.
+-   `cdc_arbiter_tb.vhd` - CDC arbiter self-checking testbench.
+-   `reset_sync_tb.vhd` - reset-synchronizer self-checking testbench.
+-   `sync_2ff_tb.vhd` - 2-FF synchronizer testbench.
 ## 4. Requirements
 ### 4.1 Technical Requirements
 ### 4.2 Functional Requirements
