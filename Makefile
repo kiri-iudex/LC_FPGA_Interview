@@ -1,17 +1,14 @@
 # Flag to indicate wether we are in debug mode or not
 DEBUG ?= 1
 # Default max simulation time
-SIMTIME ?= 100ns
+SIMTIME ?= 200us
 
 # vhd compiler
 GHDL = ghdl
 # Wave simulator
-#ifeq ($(shell uname -s), Linux)
-	#WAVE = gtkwave
-#else
-	# macOS support for gtkwave
-	#WAVE = open -a gtkwave
-#endif
+
+WAVE = gtkwave
+
 
 # Source code directory
 SRC = src
@@ -44,6 +41,7 @@ all: builddir $(TARGETS)
 
 # Dependencies
 # <my entity>: <my other entity>
+cdc_arbiter: sync_2ff
 
 
 # IP with test bench
@@ -69,7 +67,6 @@ all: builddir $(TARGETS)
 
 builddir:
 	@mkdir -p $(BUILD)/
-
 
 #simu:
 	#$(WAVE) $(SIMULATIONS)
