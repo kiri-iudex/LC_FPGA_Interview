@@ -44,7 +44,22 @@ Testbenches (`tb/`):
 -   `sync_2ff_tb.vhd` - 2-FF synchronizer testbench.
 ## 4. Requirements
 ### 4.1 Technical Requirements
+-  The solution must be implemented in VHDL.
+-   Signal generator core clock runs with a 100 MHz frequency.
+-   Control-parameter interface runs from a separate, asynchronous 33 MHz clock.
+-   The solution must be synthesizable for FPGA.
 ### 4.2 Functional Requirements
+-   Two independent output channels.
+-   Each channel independently configurable for frequency and pulse width (duty cycle / PWM).
+-   Channel independence: changing one channel's parameters must not affect the other channel's operation.
+-   Frequency range: 1 Hz to 1 MHz.
+-   Duty-cycle range: 0 % to 100 %, including the edge values:
+    -   0 % - output constantly low.
+    -   100 % - output constantly high.
+-   Parameter updates must be glitch-free: no unplanned short pulses, no extra edges, no incomplete or wrong-length periods, no transient glitches.
+-   A channel's frequency and duty must be applied together as one coherent set, so a new frequency is never briefly combined with an old duty (or vice versa).
+-   Reliable CDC of the four parameters (ch0 freq, ch0 duty, ch1 freq, ch1 duty) from the 33 MHz domain to the 100 MHz domain, with metastability management, multi-bit integrity, and no loss or double-application.
+-   Deterministic reset state: after reset the outputs are in a known state, no random pulses are produced, and the CDC and parameter logic start from a known state.
 ## 5. Architecture
 ### 5.1 Top-Level Block Diagram
 ### 5.2 Clock Domains
