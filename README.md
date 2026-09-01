@@ -182,6 +182,34 @@ A single external asynchronous reset feeds both synchronizers. The source domain
 
 Reset is active-low throughout (`isl_rst = '0'` asserts). After reset the counters are 0, `H_active = 0` (outputs low), the handshake FSM is in IDLE, and the parameter logic is in a known state.
 ## 7. Testing and Verification
+All testbenches are self-checking (they assert expected behavior and print a single PASSED/FAILED result) and were run under GHDL. Each can also be run under ModelSim or Vivado xsim.
+Testbenches:
+
+-   `two_ch_sig_generator_tb.vhd` - top-level, end-to-end. Drives the 33 MHz commit interface, lets the CDC cross the parameters, and checks both channel outputs.
+-   `sig_generator.vhd_tb` - single channel.
+-   `cdc_arbiter.vhd_tb` - CDC handshake and coherency.
+-   `reset_sync.vhd_tb` - async-assert / sync-de-assert behavior.
+-   `sync_2ff.vhd_tb` - 2-FF synchronizer.
+### 7.1 Test Breakdown
+#### 7.1.1 Test 1: Correct Reset Behaviour
+![Top level design](/img/test1_sync_resest_deassert.png)
+The first test verifies that the reset is functioning correctly: the signals and ports of the signal generator are held in a defined state. The main reset signal `isl_arst_n` de-asserts asynchronously at timestamp `A`, but the actual reset of the signal generator is synchronized to the 100Mhz clock, and de-asserts at timestamp `B`.
+
+![Top level design](/img/test1_correct_reset_behaviour.png)
+The second picture shows the after-reset behaviour of the signal generator. Although a new configuration is already provided  to signal generator, it will not be latched, until the initial period is done, which is equal to `P_DEFAULT` and lasts exactly `1us`. After the period is done, new configuration data is loaded into the active comparison registers.
+#### 7.1.2 Test 2: Minimal Frequency Test
+![Top level design](/img/test2_new_config data_loaded.png)
+![Top level design](/img/test2_high_check.png)
+This test verifies if the edge case of the slowest frequency, 1 Hz. A full 1 Hz period is 100 million cycles (about 1 s of simulation time), which is impractical to run to completion. The testbench therefore verifies the period logic without completing the period: it loads the 1 Hz configuration as the first configuration after reset (when outputs are low), captures the single high pulse at the start of the period on each channel, and then confirms the outputs remain low for 2000 further cycles - proving the full 32-bit period counter is honoured and nowhere near wrapping.
+#### 7.1.3 Test 3: Reset
+The third test once again verifies the reset behaviour and is required to clear the 1 Hz and prevents waiting a 1 s until the counting is finished.
+#### 7.1.4 Test 4: Two Channel Configuration
+![Top level design](/img/test_4.png)
+In this test, both output channels are configured with different frequencies and duty cycles. Channel 0 is configured with `50 % at P=20`, channel 1 with `75 % at P=40`. It is important to note, that the P values in this test is outside of the allowed range [1Hz to 1MHz]. This is done to decrease the simulation time.
+#### 7.1.5 Test 5: Maximum Frequency Two Channel Configuration
+![Top level design](/img/test_4_test_5_overview.png)
+This test checks if both channels, configured with the same frequency but different duty cycle, are properly outputting the signal. It is worth noting, that when the new testing data is loaded, the output on channel 1 changes slightly later than on channel 0. This is because, the previous test configured channel 1 with `P = 40`, which is slower than channel 0.
+
 ## 8. Assumptions and Known Limitations
 -   Parameters are pre-validated cycle counts. The generator assumes the provider (or an upstream conversion/validation stage) supplies `P` and `H` as valid cycle counts within range. Runtime range-checking of the crossed values is out of scope (see 6.3).
 -   Parameter format is cycle counts, not Hz/% (see 6.2). Physical-unit conversion is assumed upstream.
