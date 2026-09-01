@@ -103,13 +103,84 @@ Clock Domain Crossing is handled by the CDC Arbiter. `cdc_arbiter` moves the fou
 #### 5.3.4 Data Converter (optional / out of scope)
 ## 6. Design Details
 ### 6.1 Output Signal Generation
+Each channel is a single free-running counter with a comparator:
+
+-   The counter increments every 100 MHz cycle and wraps to 0 when it reaches `P - 1`. The wrap point sets the frequency: `f_out = f_clk / P`.
+-   The output is high while `count < H`, low otherwise. This sets the duty cycle: `duty = H / P`. A 50 % duty at a given frequency is simply the special case `H = P / 2` (a square wave).
+
+The two edge cases fall out of the same comparator with no special handling: `H = 0` gives a constantly low output (0 %), and `H = P` gives a constantly high output (100 %) with no one-cycle dip at the wrap, because `count` only ever reaches `P - 1`.
+
+Parameters are double-buffered. Incoming values are staged into pending registers (`P_pending`, `H_pending`) and a `update_ready` flag is set; the pending set is copied into the active registers only at a period boundary (when the counter is about to wrap). This is what makes updates glitch-free and atomic:
+
+-   Applying at the period boundary means the current period always completes fully, so there are no partial or wrong-length periods.
+-   Copying `P` and `H` on the same clock edge means a new frequency is never briefly paired with an old duty; the set is applied coherently.
+
+Design decision - when parameters take effect: new parameters are applied at the next period boundary, not immediately. The alternative (restart the counter immediately on update) would truncate the in-progress period, which the specification forbids. The cost of boundary-apply is that a change takes effect after up to one current period (worst case about 1 s at 1 Hz); this is the correct trade-off given the no-partial-period requirement.
+
+The `update_ready` flag is owned by a single process and is a set/consume flag: it is set when a new set is staged and cleared when the set is applied at a boundary. On the rare cycle where a new load and a period boundary coincide, the apply is ordered before the capture so that the newly arrived set is retained and applied at the following boundary rather than being dropped.
 ### 6.2 Parameter Representation
+The generator operates on cycle counts (period `P` and high-time `H`, both in 100 MHz clock cycles) rather than physical units (Hz, %). This keeps the generator a pure counter and comparator and keeps all arithmetic out of the fast clock domain. The conversion from physical units to cycle counts is assumed to occur upstream (in the data provider or in a dedicated 33 MHz conversion stage) before the values enter the CDC.
+
+Definitions (for `f_clk = 100_000_000`):
+
+-   `P = f_clk / f_out` (period in cycles)
+-   `H = P * duty_percent / 100` (high-time in cycles)
+
+Why cycle counts and not physical units:
+
+1.  Arithmetic (a divide for `P`, a multiply for `H`) stays off the 100 MHz datapath, where timing slack is smallest.
+2.  The generator is unit-agnostic and reusable, independent of how the host expresses frequency and duty.
+3.  The required endpoints are exact integers: `P = 100_000_000` for 1 Hz and `P = 100` for 1 MHz. This is why a counter-plus-comparator was chosen over a DDS phase accumulator, which would quantize frequency and could not hit these endpoints exactly, and would complicate duty control.
+
+Bit width: the largest period (1 Hz) needs 27 bits; the design uses 32-bit values for `P`, `H`, and the counter, covering the range with margin and matching the 32-bit words carried across the CDC.
+
+Note on port names: the generator's parameter ports carry `P` and `H` as cycle counts. Where a name suggests a physical unit (for example `islv32_freq`), its content is the period in cycles, and `islv32_duty_cycle` is the high-time in cycles.
 ### 6.3 Input Validation and Clamping
+Implementation status: validation is documented here as part of the extended architecture and is out of scope for this submission; the generator assumes pre-validated cycle counts.
+
+If included, validation belongs in the 33 MHz conditioning stage, before the CDC, so only known-good values ever cross. Two classes of illegal input are handled:
+
+-   Period `P` outside `[P_MIN, P_MAX] = [100, 100_000_000]` is clamped to the nearest bound (`P > P_MAX` clamps to 1 Hz, `P < P_MIN` clamps to 1 MHz).
+-   High-time `H` greater than the period is clamped to `P` (100 % duty). Because `H` is unsigned, the lower bound of 0 is automatic.
+
+Ordering matters: `H` is clamped against the already-clamped `P`, not the raw `P`. Example: a request for 1 MHz (`P = 100`) with `H = 150` is illegal; clamping `H` to the clamped `P` of 100 yields a sane 100 % instead of a nonsensical value.
+
+Design decision - clamp rather than reject: illegal inputs are clamped to the nearest legal value so the generator always has a defined, safe configuration, rather than rejecting or ignoring the update. `H` is clamped to `P` on the assumption that the provider sends coherent `(P, H)` pairs.
+
+Note: the `P_DEFAULT` generic is range-constrained (`natural range 100 to 100_000_000`), so an out-of-range default is caught at elaboration. This guards the compile-time default only; runtime parameter values arriving over the CDC are the responsibility of the (out-of-scope) validation stage.
 ### 6.4 CDC Strategy
 #### 6.4.1 Chosen strategy
-#### 6.4.2 Alternatives considered
+The four parameters cross from 33 MHz to 100 MHz using a four-phase request/acknowledge handshake, with the data bus held stable during the crossing:
+
+-   On `commit`, the slow-domain FSM latches all four parameters into internal registers (freezing them), asserts `req` and `busy` signals.
+-   Only the single-bit `req` is synchronized into the 100 MHz domain (via `sync_2ff`). The wide data bus is never passed bit-by-bit through synchronizers.
+-   The fast domain detects the rising edge of the synchronized `req`, captures the (now stable) data bus in a single clock, and emits a one-cycle `load` pulse to both generators.
+-   The fast domain asserts `ack`. The slow domain synchronizes `ack` back, drops `req`, then de-asserts `busy` and returns to IDLE.
+
+Why this satisfies the requirements:
+
+-   Metastability: only single-bit `req`/`ack` cross asynchronously, each through a 2-FF synchronizer; the wide bus is sampled only when known-stable, so there is no multi-bit metastability.
+-   Coherent multi-bit set: the data is latched once and frozen for the whole handshake, then captured on a single fast-domain edge, so all four values (both channels) are applied together.
+-   No loss / no double-apply: `busy` backpressure prevents a new commit while a transfer is in flight, and the fast side captures once on the edge of synchronized `req`.
+
+Data-before-req detail: data and `req` are launched on the same slow-clock edge, but the fast domain never samples the data on that edge - the synchronizer delays `req` by at least two fast cycles, by which time the (frozen) bus has long settled. The synchronizer latency provides the required setup margin.
+
+Internal-freeze detail: because the crossed data is an internal latched copy, the input ports may change freely during the handshake; the provider only needs the inputs stable at the `commit` edge. The `busy`/FSM-state lock is what keeps the internal copy frozen.
+#### 6.4.2 Alternatives
+-   Asynchronous FIFO: built for streaming throughput. Here updates are rare and only the latest coherent set matters, so a FIFO is unnecessary logic and verification overhead.
+-   Gray code: valid only when a single bit changes per step (FIFO pointers, counters). Arbitrary parameter values change many bits at once, so gray coding does not apply; the data is held stable instead.
+-   Double-flopping each data bit independently: the classic bug - bits can arrive skewed by a cycle, momentarily presenting a corrupted value. Avoided by crossing only `req`/`ack` and holding the bus stable.
 #### 6.4.3 Channel coupling note
+Both channels' parameters are carried in one payload behind one handshake, and one shared `load` pulse stages both. Channel independence is preserved at the output: each channel latches its own pending set at its own period boundary, so a change to one never disturbs the other's live output. A per-channel CDC (or a channel-select payload) is a possible alternative that would decouple the transfers as well. The shared payload was chosen for simplicity and guaranteed coherency.
 ### 6.5 Reset Strategy 
+Reset uses asynchronous assertion and synchronous de-assertion, implemented with one `reset_sync` per clock domain:
+
+-   Assert is asynchronous: when the external reset drops, the outputs reset immediately without waiting for a clock, so logic never runs briefly before reset takes effect.
+-   De-assert is synchronous: on release, a constant `1` is shifted through a 2-FF chain, so the reset output rises only after two clock edges and aligned to the clock. This avoids recovery/removal timing problems on release and ensures the whole domain leaves reset on the same edge.
+
+A single external asynchronous reset feeds both synchronizers. The source domain of that reset is irrelevant, because each synchronizer treats its input as asynchronous and re-times the release to its own clock. Assertion is effectively simultaneous across domains; de-assertion is staggered (each domain releases two of its own clock cycles after the external reset rises), which is correct for independent domains bridged by a CDC.
+
+Reset is active-low throughout (`isl_rst = '0'` asserts). After reset the counters are 0, `H_active = 0` (outputs low), the handshake FSM is in IDLE, and the parameter logic is in a known state.
 ## 7. Testing and Verification
 ## 8. Assumptions and Known Limitations
 ## 9. Tools and Environment
