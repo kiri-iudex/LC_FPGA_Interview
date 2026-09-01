@@ -210,6 +210,21 @@ In this test, both output channels are configured with different frequencies and
 ![Top level design](/img/test_4_test_5_overview.png)
 
 This test checks if both channels, configured with the same frequency but different duty cycle, are properly outputting the signal. It is worth noting, that when the new testing data is loaded, the output on channel 1 changes slightly later than on channel 0. This is because, the previous test configured channel 1 with `P = 40`, which is slower than channel 0.
+#### 7.1.6 Test 6: Duty Cycle Edge Cases
+![Top level design](/img/test_6_high_low.png)
+This test verifies that 0% and 100% duty cycles are handled properly. Channel 0 configuration has `H = 0%` and Channel 1 is `H = 100%`. Both channels output the correct waveform without any glitches.
+
+#### 7.1.7 Test 7: Multiple Parameter Changes While Running
+![Top level design](/img/test7_multiple_params.png)
+This test sends consecutive configuration to the module, with a 5 us delay between each transfer. `isl_load` signal can be followed to see when the data is loaded into each signal generator. Because `P` value is quite small, the new configuration is applied almost immediately. It is also worth pointing out, that the signals are independent of each other, therefore, we can see a skew on the output. This is normal, as signal generators are configured with different `P` values.
+
+#### 7.1.8 Test 8: Channel Independence
+![Top level design](/img/test_8_channel_independence.png)
+This test verifies that changing configuration data of one channel does not affect the other channel, although they share the same `load` signal. Channel 0 and 1 are loaded with different parameters at the beginning, After some time, channel 0 parameters change during the test, but channel 1 continues to output the same signal.
+
+#### 7.1.9 Test 9: Reset During Operation
+![Top level design](/img/test9_reset_during_op.png)
+This test checks if the reset behaviour is correct during execution. The signal generators are reset and then reconfigured with the same configuration data. It can be observed, that both signals become identical. This is because the reset synchronized the outputs.
 
 ## 8. Assumptions and Known Limitations
 -   Parameters are pre-validated cycle counts. The generator assumes the provider (or an upstream conversion/validation stage) supplies `P` and `H` as valid cycle counts within range. Runtime range-checking of the crossed values is out of scope (see 6.3).
