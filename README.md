@@ -62,6 +62,31 @@ Testbenches (`tb/`):
 -   Deterministic reset state: after reset the outputs are in a known state, no random pulses are produced, and the CDC and parameter logic start from a known state.
 ## 5. Architecture
 ### 5.1 Top-Level Block Diagram
+![Top level design](/img/top_lvl_design.png)
+The data path is:
+
+```
+   33 MHz domain            |     100 MHz domain
+                            |
+  data provider --commit--> | 
+   (freq/duty, per channel) |
+            |               |
+            v               |
+      +-------------+       |    +--------------------+
+      | CDC arbiter |==load,params==>| sig_generator ch0 |--> Ch0
+      | (req/ack +  |       |    +--------------------+
+      |  busy FSM)  |==load,params==>| sig_generator ch1 |--> Ch1
+      +-------------+       |    +--------------------+
+            ^  ^            |          ^
+            |  |            |          |
+   rst33 ---+  |            |  rst100 -+
+      (reset_sync 33)       |     (reset_sync 100)
+                            |
+        external async reset feeds both reset synchronizers
+
+```
+
+The clock-domain boundary passes through the CDC arbiter: its request FSM lives in the 33 MHz domain and its data-capture logic in the 100 MHz domain. Both signal generators and the fast side of the arbiter are in the 100 MHz domain.
 ### 5.2 Clock Domains
 ### 5.3 Components
 #### 5.3.1 Signal Generator
