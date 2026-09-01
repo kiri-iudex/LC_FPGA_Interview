@@ -95,8 +95,11 @@ There are two asynchronous clock domains:
 The only signals that cross between domains are the single-bit CDC handshake lines (`req`, `ack`), each passed through a 2-FF synchronizer, and the parameter data bus, which is held stable and captured under handshake control (never passed bit-by-bit through synchronizers). See 6.4.
 ### 5.3 Components
 #### 5.3.1 Signal Generator
+The Signal Generator `sig_generator` produces one output channel. It is a free-running counter compared against two registers: the period `P` (counter wrap point) sets the frequency, and the high-time `H` (compare threshold) sets the duty cycle. The output is high while `count < H` and the counter wraps at `P - 1`, giving frequency `f_clk / P` and duty `H / P`. Parameters are double-buffered (pending vs active) and swapped atomically at a period boundary. A generic `P_DEFAULT` (range 100 to 100_000_000) sets the period held after reset. See 6.1.
 #### 5.3.2 CDC Arbiter
+Clock Domain Crossing is handled by the CDC Arbiter. `cdc_arbiter` moves the four parameters from the 33 MHz domain to the 100 MHz domain as a single coherent set. A slow-domain FSM (IDLE / WAIT_ACK / WAIT_CLR) latches the parameters on `commit`, raises `req`, and asserts `busy`. The fast domain detects the synchronized `req`, captures the (stable) data in one shot, emits a one-cycle `load` pulse, and sends `ack` back to the slow domain. See 6.4.
 #### 5.3.3 Reset Synchronizer
+`reset_sync` provides an asynchronous-assert, synchronous-de-assert reset. One instance per clock domain converts the single external asynchronous reset into a clean, domain-local reset that releases synchronously to that domain's clock. See 6.5.
 #### 5.3.4 Data Converter (optional / out of scope)
 ## 6. Design Details
 ### 6.1 Output Signal Generation
