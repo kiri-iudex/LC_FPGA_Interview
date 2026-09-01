@@ -6,6 +6,29 @@ The generator core runs on a 100 MHz clock, while configuration parameters are s
 
 The design is written in synthesizable VHDL and is organized as a small hierarchy: a top-level module wiring together two signal-generator channels, a CDC arbiter, and per-domain reset synchronizers. Verification is done with self-checking testbenches at both the block level and the top level.
 ## 2. Quick Start / How to Build and Simulate
+GHDL and GTKWave are open-source tools used together to design, test, and troubleshoot digital hardware circuits written in VHDL.
+#### Prerequisites
+Both tools have to be installed on the system. To check whether the tools are present, run these commands:
+
+```
+$ ghdl -v
+$ gtkwave -v
+```
+#### Design Verification and Testbench Execution
+```
+$ git clone <REPO_URL>
+$ cd <REPO_DIR>
+$ make
+```
+
+#### What a passing run looks like
+Each testbench is self-checking and prints one `OK` line per scenario, ending with a single result line. A passing run ends with:
+
+```
+TB RESULT: PASSED (all scenarios)
+
+```
+A failing run instead prints `TB RESULT: FAILED with N error(s)` and one `error` line per failed check, so failures are easy to locate.
 ## 3. Repository Structure
 ```
 │   .gitignore
@@ -235,3 +258,17 @@ This test checks if the reset behaviour is correct during execution. The signal 
 -   Behavioral verification only. Timing closure and CDC/metastability are covered by constraints and static analysis, not by the testbenches (see 7).
 -   Constraints are required for correct hardware operation. The synchronizer flip-flops need `ASYNC_REG`, and the CDC data bus needs a `set_max_delay -datapath_only` (or false-path) exception (see 9).
 ## 9. Tools and Environment
+-   Language: VHDL.
+-   Simulators used: GHDL (with GTKWave for waveforms)
+
+
+```
+GHDL     : 7.0.0-dev 
+GTKWave  : v3.3.90
+
+```
+Required constraints:
+
+-   `ASYNC_REG = TRUE` on the two flip-flops of each `sync_2ff` (and, if used, on the reset-synchronizer flip-flops), so the tool packs them together for maximum metastability settling time and does not optimize them apart.
+-   A timing exception on the CDC data bus (`slv32_* -> oslv32_*` inside the arbiter): `set_max_delay -datapath_only` (or a false path), because that path is deliberately unsynchronized and relies on the handshake for stability rather than on single-cycle timing.
+-   The two clocks (33 MHz and 100 MHz) declared as asynchronous / unrelated clock groups so the tool does not attempt to time paths between them except where constrained above.
