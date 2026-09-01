@@ -88,6 +88,11 @@ The data path is:
 
 The clock-domain boundary passes through the CDC arbiter: its request FSM lives in the 33 MHz domain and its data-capture logic in the 100 MHz domain. Both signal generators and the fast side of the arbiter are in the 100 MHz domain.
 ### 5.2 Clock Domains
+There are two asynchronous clock domains:
+-   33 MHz domain: receives configuration parameters and the `commit` signal, runs the CDC request FSM, and drives the `busy` signal back to the data provider.
+-   100 MHz domain: the signal generator cores, the fast side of the CDC arbiter, and the generated outputs.
+
+The only signals that cross between domains are the single-bit CDC handshake lines (`req`, `ack`), each passed through a 2-FF synchronizer, and the parameter data bus, which is held stable and captured under handshake control (never passed bit-by-bit through synchronizers). See 6.4.
 ### 5.3 Components
 #### 5.3.1 Signal Generator
 #### 5.3.2 CDC Arbiter
