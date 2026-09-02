@@ -2,6 +2,20 @@ library ieee;
 use ieee.std_logic_1164.all;
 use IEEE.NUMERIC_STD.ALL;
 
+-------------------------------------------------------------------------------
+-- File        : sig_generator.vhd
+-- Project     : Two-Channel Signal Generator with CDC
+-- Author      : Kiril Burlakov
+-- Standard    : VHDL
+-------------------------------------------------------------------------------
+-- Description : Single-channel PWM / frequency generator. A free-running counter is
+--               compared against two registers: the period P (counter wrap point) sets the
+--               output frequency, and the high-time H (compare threshold) sets the duty
+--               cycle. Parameters are expressed as 100 MHz clock-cycle counts and are
+--               double-buffered (pending vs active), so a new set is applied atomically at
+--               a period boundary for glitch-free, no-partial-period updates. The generic
+--               P_DEFAULT sets the period held after reset.
+-------------------------------------------------------------------------------
 
 entity sig_generator is
   generic (
@@ -9,7 +23,7 @@ entity sig_generator is
   );
   port (
     isl_clk           : in std_logic;
-    isl_rst           : in std_logic;
+    isl_arst_n        : in std_logic;
     islv32_duty_cycle : in std_logic_vector(31 downto 0);
     islv32_freq       : in std_logic_vector(31 downto 0);
     isl_load          : in std_logic;
@@ -32,9 +46,9 @@ architecture rtl of sig_generator is
 begin
 
   -- Process responsible for updating the comparison registers.
-  update_proc : process(isl_clk, isl_rst)
+  update_proc : process(isl_clk, isl_arst_n)
   begin
-      if isl_rst = '0' then
+      if isl_arst_n = '0' then
         sl_update_ready <= '0';
         sl_P_active <= std_logic_vector(to_unsigned(P_DEFAULT, 32));
         sl_H_active <= (others => '0');
@@ -58,9 +72,9 @@ begin
       end if;
     end process;
 
-  counter_proc : process(isl_clk, isl_rst)
+  counter_proc : process(isl_clk, isl_arst_n)
   begin
-    if isl_rst = '0' then 
+    if isl_arst_n = '0' then 
       sl_count_pwm <= (others => '0');
     elsif rising_edge(isl_clk) then 
       if sl_period_end = '1' then
