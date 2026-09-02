@@ -124,6 +124,7 @@ Clock Domain Crossing is handled by the CDC Arbiter. `cdc_arbiter` moves the fou
 #### 5.3.3 Reset Synchronizer
 `reset_sync` provides an asynchronous-assert, synchronous-de-assert reset. One instance per clock domain converts the single external asynchronous reset into a clean, domain-local reset that releases synchronously to that domain's clock. See 6.5.
 #### 5.3.4 Data Converter (optional / out of scope)
+The generator operates on cycle counts, not physical units (Hz, %). If a data provider supplied Hz and %, a conversion stage in the 33 MHz domain would translate them to cycle counts (and perform range validation) before the CDC. This stage is out of scope for this implementation and is described for completeness in 6.2 and 6.3.
 ## 6. Design Details
 ### 6.1 Output Signal Generation
 Each channel is a single free-running counter with a comparator:
