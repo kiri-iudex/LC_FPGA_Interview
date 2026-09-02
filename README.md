@@ -213,7 +213,12 @@ Testbenches:
 -   `cdc_arbiter.vhd_tb` - CDC handshake and coherency.
 -   `reset_sync.vhd_tb` - async-assert / sync-de-assert behavior.
 -   `sync_2ff.vhd_tb` - 2-FF synchronizer.
+
+Scope of verification: these testbenches provide behavioural (functional) verification - frequencies, duty cycles, edge cases, resets, channel independence, exact waveforms after each change, and the CDC handshake sequence. They do not, by their nature, prove:
+-   Timing closure - this is established by static timing analysis (STA) after synthesis/implementation.
+-   CDC/metastability robustness - metastability is a statistical physical effect not observable in behavioural simulation. It is handled by construction (2-FF synchronizers), the `ASYNC_REG` attribute, and CDC timing constraints, and is checked by static CDC analysis rather than by simulation.
 ### 7.1 Test Breakdown
+This is a breakdown of tests that are executed in `two_ch_sig_generator_tb`.
 #### 7.1.1 Test 1: Correct Reset Behaviour
 ![Top level design](/img/test1_sync_resest_deassert.png)
 The first test verifies that the reset is functioning correctly: the signals and ports of the signal generator are held in a defined state. The main reset signal `isl_arst_n` de-asserts asynchronously at timestamp `A`, but the actual reset of the signal generator is synchronized to the 100Mhz clock, and de-asserts at timestamp `B`.
@@ -261,11 +266,9 @@ This test checks if the reset behaviour is correct during execution. The signal 
 -   Language: VHDL.
 -   Simulators used: GHDL (with GTKWave for waveforms)
 
-
 ```
 GHDL     : 7.0.0-dev 
 GTKWave  : v3.3.90
-
 ```
 Required constraints:
 
