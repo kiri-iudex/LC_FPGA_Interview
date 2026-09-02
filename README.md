@@ -131,6 +131,11 @@ Clock Domain Crossing is handled by the CDC Arbiter. `cdc_arbiter` moves the fou
 #### 5.3.4 Data Converter (optional / out of scope)
 The generator operates on cycle counts, not physical units (Hz, %). If a data provider supplied Hz and %, a conversion stage in the 33 MHz domain would translate them to cycle counts (and perform range validation) before the CDC. This stage is out of scope for this implementation and is described for completeness in 6.2 and 6.3.
 ## 6. Design Details
+Important definitions (for `f_clk = 100_000_000`):
+
+-   `P = f_clk / f_out` (period in cycles)
+-   `H = P * duty_percent / 100` (high-time in cycles)
+
 ### 6.1 Output Signal Generation
 Each channel is a single free-running counter with a comparator:
 
@@ -149,11 +154,6 @@ Design decision - when parameters take effect: new parameters are applied at the
 The `update_ready` flag is owned by a single process and is a set/consume flag: it is set when a new set is staged and cleared when the set is applied at a boundary. On the rare cycle where a new load and a period boundary coincide, the apply is ordered before the capture so that the newly arrived set is retained and applied at the following boundary rather than being dropped.
 ### 6.2 Parameter Representation
 The generator operates on cycle counts (period `P` and high-time `H`, both in 100 MHz clock cycles) rather than physical units (Hz, %). This keeps the generator a pure counter and comparator and keeps all arithmetic out of the fast clock domain. The conversion from physical units to cycle counts is assumed to occur upstream (in the data provider or in a dedicated 33 MHz conversion stage) before the values enter the CDC.
-
-Definitions (for `f_clk = 100_000_000`):
-
--   `P = f_clk / f_out` (period in cycles)
--   `H = P * duty_percent / 100` (high-time in cycles)
 
 Why cycle counts and not physical units:
 
