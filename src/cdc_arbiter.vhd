@@ -20,23 +20,23 @@ use IEEE.NUMERIC_STD.ALL;
 
 entity cdc_arbiter is
     port (
-        isl_clk100      : in std_logic;
-        isl_clk33       : in std_logic;
-        isl_rst100      : in std_logic;
-        isl_rst33       : in std_logic;
+        isl_clk100         : in std_logic;
+        isl_clk33          : in std_logic;
+        isl_arst100_n      : in std_logic;
+        isl_arst33_n       : in std_logic;
 
-        islv32_freq_ch0 : in std_logic_vector(31 downto 0);
-        islv32_duty_ch0 : in std_logic_vector(31 downto 0);
-        islv32_freq_ch1 : in std_logic_vector(31 downto 0);
-        islv32_duty_ch1 : in std_logic_vector(31 downto 0);
-        isl_commit33    : in std_logic;                            -- Commit input signal that comes from the 33Mhz clock domain, same as the data. Instructs the CDC Arbiter that data on the data channels is valid and need to be outputted
+        islv32_freq_ch0    : in std_logic_vector(31 downto 0);
+        islv32_duty_ch0    : in std_logic_vector(31 downto 0);
+        islv32_freq_ch1    : in std_logic_vector(31 downto 0);
+        islv32_duty_ch1    : in std_logic_vector(31 downto 0);
+        isl_commit33       : in std_logic;                            -- Commit input signal that comes from the 33Mhz clock domain, same as the data. Instructs the CDC Arbiter that data on the data channels is valid and need to be outputted
 
-        oslv32_freq_ch0 : out std_logic_vector(31 downto 0);
-        oslv32_duty_ch0 : out std_logic_vector(31 downto 0);
-        oslv32_freq_ch1 : out std_logic_vector(31 downto 0);
-        oslv32_duty_ch1 : out std_logic_vector(31 downto 0);
-        osl_load        : out std_logic;                           -- Load signal that instructs the signal generator to load the new parameters and use them as the new config.
-        osl_busy        : out std_logic                            -- Busy signal that tells the data provider that no data can be sent right now.
+        oslv32_freq_ch0    : out std_logic_vector(31 downto 0);
+        oslv32_duty_ch0    : out std_logic_vector(31 downto 0);
+        oslv32_freq_ch1    : out std_logic_vector(31 downto 0);
+        oslv32_duty_ch1    : out std_logic_vector(31 downto 0);
+        osl_load           : out std_logic;                           -- Load signal that instructs the signal generator to load the new parameters and use them as the new config.
+        osl_busy           : out std_logic                            -- Busy signal that tells the data provider that no data can be sent right now.
     );
 end cdc_arbiter;
 
@@ -63,16 +63,16 @@ architecture rtl of cdc_arbiter is
 begin
     -- 2FF syncs to allow a stable handshake between 2 clock domains
     u_req_sync : entity work.sync_2ff
-    port map (isl_clk => isl_clk100, isl_rst => isl_rst100, isl_d => sl_req33, osl_d => sl_req100);
+    port map (isl_clk => isl_clk100, isl_rst => isl_arst100_n, isl_d => sl_req33, osl_d => sl_req100);
 
     u_ack_sync : entity work.sync_2ff
-    port map (isl_clk => isl_clk33,  isl_rst => isl_rst33,  isl_d => sl_ack100, osl_d => sl_ack33);
+    port map (isl_clk => isl_clk33,  isl_rst => isl_arst33_n,  isl_d => sl_ack100, osl_d => sl_ack33);
 
     -- Process clocked with the slow, 33 MHz clock.
     -- Responsible for receiving the config data and initiating the handshake with the fast, 100 MHz data output.
-    slow_clock : process (isl_clk33, isl_rst33)
+    slow_clock : process (isl_clk33, isl_arst33_n)
     begin
-        if isl_rst33 = '0' then
+        if isl_arst33_n = '0' then
             State <= IDLE;
             sl_busy <= '0';
             slv32_freq_ch0 <= (others => '0');
@@ -111,9 +111,9 @@ begin
     end process;
 
     -- 100Mhz process, responsible for laching the config data to the outputs and sending a load signal to the signal generator.
-    fast_clock_data_latch : process (isl_clk100, isl_rst100)
+    fast_clock_data_latch : process (isl_clk100, isl_arst100_n)
     begin
-        if isl_rst100 = '0' then
+        if isl_arst100_n = '0' then
             sl_load <= '0';
             sl_req100_d <= '0';
             oslv32_freq_ch0 <= (others => '0');
@@ -135,9 +135,9 @@ begin
 
     -- 100 Mhz process
     -- Second part of the handshake, instructing the slow domain that data was received and sent.
-    ack_back_to_slow : process (isl_clk100, isl_rst100)
+    ack_back_to_slow : process (isl_clk100, isl_arst100_n)
     begin
-        if isl_rst100 = '0' then
+        if isl_arst100_n = '0' then
             sl_ack100 <= '0';
         elsif rising_edge(isl_clk100) then
             if (sl_load = '1') then

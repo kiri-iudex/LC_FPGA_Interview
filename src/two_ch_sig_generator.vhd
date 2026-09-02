@@ -52,8 +52,8 @@ begin
         isl_clk100 => isl_clk100,
         isl_clk33 => isl_clk33,
 
-        isl_rst100 => sl_rst100_n,
-        isl_rst33 => sl_rst33_n,
+        isl_arst100_n => sl_rst100_n,
+        isl_arst33_n => sl_rst33_n,
 
         islv32_freq_ch0 => islv32_freq_ch0,
         islv32_duty_ch0 => islv32_duty_ch0,
