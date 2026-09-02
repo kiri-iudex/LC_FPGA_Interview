@@ -6,7 +6,8 @@ The generator core runs on a 100 MHz clock, while configuration parameters are s
 
 The design is written in synthesizable VHDL and is organized as a small hierarchy: a top-level module wiring together two signal-generator channels, a CDC arbiter, and per-domain reset synchronizers. Verification is done with self-checking testbenches at both the block level and the top level.
 ## 2. Quick Start / How to Build and Simulate
-GHDL and GTKWave are open-source tools used together to design, test, and troubleshoot digital hardware circuits written in VHDL.
+### 2.1 GHDL & GTkwave
+[GHDL](https://github.com/ghdl/ghdl) and [GTKWave](https://gtkwave.sourceforge.net/) are open-source tools used together to design, test, and troubleshoot digital hardware circuits written in VHDL.
 #### Prerequisites
 Both tools have to be installed on the system. To check whether the tools are present, run these commands:
 
@@ -16,17 +17,21 @@ $ gtkwave -v
 ```
 #### Design Verification and Testbench Execution
 ```
-$ git clone <REPO_URL>
-$ cd <REPO_DIR>
+$ git clone https://github.com/kiri-iudex/LC_FPGA_Interview.git
+$ cd LC_FPGA_Interview
 $ make
 ```
-
-#### What a passing run looks like
+The above commands will compile, verify and execute all testbenches that are present in the repository. GTKwave then can be used to look at the waveforms of the simulation. Use the following command to open a specific testbench in GTKwave:
+```
+$ $ gtkwave ./simu/<COMPONENT_NAME>.vcd
+```
+### 2.2 ModelSim
+To compile, verify and test the modules, create a new project in ModelSim, add the source and testbench files to the project and compile them. After that, select Simulate -> Start Simulation. You will be prompted to select a testbench that will be executed. After that, the waveform window will open. Here, the simulation steps can be executed. Use the buttons at the top to control the flow of the simulatio.
+### 2.3 What a passing run looks like
 Each testbench is self-checking and prints one `OK` line per scenario, ending with a single result line. A passing run ends with:
 
 ```
 TB RESULT: PASSED (all scenarios)
-
 ```
 A failing run instead prints `TB RESULT: FAILED with N error(s)` and one `error` line per failed check, so failures are easy to locate.
 ## 3. Repository Structure
@@ -270,6 +275,7 @@ This test checks if the reset behaviour is correct during execution. The signal 
 ```
 GHDL     : 7.0.0-dev 
 GTKWave  : v3.3.90
+ModelSim : INTEL FPGA STARTER EDITION 2020.1
 ```
 Required constraints:
 
