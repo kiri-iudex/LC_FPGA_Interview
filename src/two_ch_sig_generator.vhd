@@ -2,6 +2,20 @@ library ieee;
 use ieee.std_logic_1164.all;
 use IEEE.NUMERIC_STD.ALL;
 
+-------------------------------------------------------------------------------
+-- File        : two_ch_sig_generator.vhd
+-- Project     : Two-Channel Signal Generator with CDC
+-- Author      : Kiril Burlakov
+-- Standard    : VHDL
+-------------------------------------------------------------------------------
+-- Description : Top-level module of the two-channel signal generator. Instantiates two
+--               independent signal-generator channels, the CDC arbiter, and one reset
+--               synchronizer per clock domain, wiring them into a complete design: an
+--               asynchronous 33 MHz configuration interface (with commit / busy handshake)
+--               feeds parameters across the CDC into a 100 MHz generation core that drives
+--               the two channel outputs.
+-------------------------------------------------------------------------------
+
 entity two_ch_sig_generator is
     port(
         isl_clk100 : in std_logic;
