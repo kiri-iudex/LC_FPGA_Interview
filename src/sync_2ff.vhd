@@ -5,7 +5,7 @@ use ieee.std_logic_1164.all;
 -- File        : sync_2ff.vhd
 -- Project     : Two-Channel Signal Generator with CDC
 -- Author      : Kiril Burlakov
--- Standard    : VHDL-2008
+-- Standard    : VHDL
 -------------------------------------------------------------------------------
 -- Description : Two-flip-flop synchronizer for a single control bit crossing between
 --               asynchronous clock domains. Passing a one-bit signal through two
