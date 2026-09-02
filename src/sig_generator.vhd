@@ -2,6 +2,20 @@ library ieee;
 use ieee.std_logic_1164.all;
 use IEEE.NUMERIC_STD.ALL;
 
+-------------------------------------------------------------------------------
+-- File        : sig_generator.vhd
+-- Project     : Two-Channel Signal Generator with CDC
+-- Author      : Kiril Burlakov
+-- Standard    : VHDL
+-------------------------------------------------------------------------------
+-- Description : Single-channel PWM / frequency generator. A free-running counter is
+--               compared against two registers: the period P (counter wrap point) sets the
+--               output frequency, and the high-time H (compare threshold) sets the duty
+--               cycle. Parameters are expressed as 100 MHz clock-cycle counts and are
+--               double-buffered (pending vs active), so a new set is applied atomically at
+--               a period boundary for glitch-free, no-partial-period updates. The generic
+--               P_DEFAULT sets the period held after reset.
+-------------------------------------------------------------------------------
 
 entity sig_generator is
   generic (
