@@ -72,7 +72,7 @@ begin
     SIG_GEN_CH0 : entity work.sig_generator(rtl)
     port map(
         isl_clk => isl_clk100,
-        isl_rst => sl_rst100_n,
+        isl_arst_n => sl_rst100_n,
         islv32_duty_cycle => slv32_duty_ch0,
         islv32_freq => slv32_freq_ch0,
         isl_load => sl_load,
@@ -82,7 +82,7 @@ begin
     SIG_GEN_CH1 : entity work.sig_generator(rtl)
     port map(
         isl_clk => isl_clk100,
-        isl_rst => sl_rst100_n,
+        isl_arst_n => sl_rst100_n,
         islv32_duty_cycle => slv32_duty_ch1,
         islv32_freq => slv32_freq_ch1,
         isl_load => sl_load,

@@ -29,7 +29,7 @@ architecture sim of sig_generator_tb is
   constant CLK_P : time := 10 ns;   -- 100 MHz
 
   signal isl_clk        : std_logic := '0';
-  signal isl_rst        : std_logic := '0';
+  signal isl_arst_n        : std_logic := '0';
   signal islv32_duty    : std_logic_vector(31 downto 0) := (others => '0');
   signal islv32_freq    : std_logic_vector(31 downto 0) := (others => '0');
   signal isl_load       : std_logic := '0';
@@ -42,7 +42,7 @@ begin
     generic map (P_DEFAULT => 100)
     port map (
       isl_clk           => isl_clk,
-      isl_rst           => isl_rst,
+      isl_arst_n        => isl_arst_n,
       islv32_duty_cycle => islv32_duty,
       islv32_freq       => islv32_freq,
       isl_load          => isl_load,
@@ -62,10 +62,10 @@ begin
 
     procedure pulse_reset is
     begin
-      isl_rst <= '0';
+      isl_arst_n <= '0';
       wait for 100 ns;
       wait until rising_edge(isl_clk);
-      isl_rst <= '1';
+      isl_arst_n <= '1';
     end procedure;
 
     -- stage a new (P, H) via a one-cycle load pulse
