@@ -2,6 +2,22 @@ library ieee;
 use ieee.std_logic_1164.all;
 use IEEE.NUMERIC_STD.ALL;
 
+-------------------------------------------------------------------------------
+-- File        : cdc_arbiter.vhd
+-- Project     : Two-Channel Signal Generator with CDC
+-- Author      : Kiril Burlakov
+-- Standard    : VHDL
+-------------------------------------------------------------------------------
+-- Description : Clock-domain-crossing controller. Transfers the two channels frequency and
+--               duty parameters from the 33 MHz control domain to the 100 MHz generator
+--               domain as one coherent set, using a four-phase request/acknowledge
+--               handshake with a busy backpressure signal to the data provider. Only the
+--               single-bit handshake lines are synchronized. The data bus is held stable
+--               and captured under handshake control, then presented with a one-cycle load
+--               pulse. Guarantees metastability-safe, coherent, no-loss / no-double-apply
+--               transfer.
+-------------------------------------------------------------------------------
+
 entity cdc_arbiter is
     port (
         isl_clk100      : in std_logic;
