@@ -63,10 +63,10 @@ architecture rtl of cdc_arbiter is
 begin
     -- 2FF syncs to allow a stable handshake between 2 clock domains
     u_req_sync : entity work.sync_2ff
-    port map (isl_clk => isl_clk100, isl_rst => isl_arst100_n, isl_d => sl_req33, osl_d => sl_req100);
+    port map (isl_clk => isl_clk100, isl_arst_n => isl_arst100_n, isl_d => sl_req33, osl_d => sl_req100);
 
     u_ack_sync : entity work.sync_2ff
-    port map (isl_clk => isl_clk33,  isl_rst => isl_arst33_n,  isl_d => sl_ack100, osl_d => sl_ack33);
+    port map (isl_clk => isl_clk33,  isl_arst_n => isl_arst33_n,  isl_d => sl_ack100, osl_d => sl_ack33);
 
     -- Process clocked with the slow, 33 MHz clock.
     -- Responsible for receiving the config data and initiating the handshake with the fast, 100 MHz data output.

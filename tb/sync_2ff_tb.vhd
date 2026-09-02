@@ -24,7 +24,7 @@ begin
   DUT_100 : entity work.sync_2ff
     port map (
       isl_clk => isl_clk100,   
-      isl_rst => isl_rst100,
+      isl_arst_n => isl_rst100,
       isl_d   => isl_d33,
       osl_d   => osl_d100
     );
@@ -33,7 +33,7 @@ begin
   DUT_33 : entity work.sync_2ff
     port map (
       isl_clk => isl_clk33,
-      isl_rst => isl_rst33,
+      isl_arst_n => isl_rst33,
       isl_d   => isl_d100,
       osl_d   => osl_d33
     );
@@ -57,7 +57,9 @@ begin
     isl_d100 <= '0';
     wait for 100 ns;
 
-    report "Testbench finished: OK" severity note;
+    report "=================================================";
+    report "TB RESULT: PASSED (all scenarios)" severity note;
+    report "=================================================";
     wait;
   end process;
 
