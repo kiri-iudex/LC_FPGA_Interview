@@ -105,7 +105,7 @@ begin
                         sl_busy <= '0';
                         State <= IDLE;
                     end if;
-                when others => state <= IDLE;
+                when others => State <= IDLE;
 
             end case;
         end if;
