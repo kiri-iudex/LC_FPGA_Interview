@@ -72,7 +72,7 @@ begin
     -- Responsible for receiving the config data and initiating the handshake with the fast, 100 MHz data output.
     slow_clock : process (isl_clk33, isl_arst33_n)
     begin
-        if isl_arst33_n = '0' then
+        if (isl_arst33_n = '0') then
             State <= IDLE;
             sl_busy <= '0';
             slv32_freq_ch0 <= (others => '0');
@@ -80,11 +80,11 @@ begin
             slv32_freq_ch1 <= (others => '0');
             slv32_duty_ch1 <= (others => '0');
             sl_req33 <= '0';
-        elsif rising_edge(isl_clk33) then
+        elsif (rising_edge(isl_clk33)) then
             case State is 
                 -- Waiting for commit signal from the config data provider. IDLE -> WAIT_ACK when data is received and handshake with the 100mhz domain is started.
                 when IDLE => 
-                    if isl_commit33 = '1' then
+                    if (isl_commit33 = '1') then
                         slv32_freq_ch0 <= islv32_freq_ch0;
                         slv32_duty_ch0 <= islv32_duty_ch0;
                         slv32_freq_ch1 <= islv32_freq_ch1;
@@ -95,13 +95,13 @@ begin
                     end if;
                 -- Waiting for fast clock domain acknowledgement. WAIT_ACK -> WAIT_CLR when ack signal from fast clock domain is received.
                 when WAIT_ACK =>
-                    if sl_ack33 = '1' then
+                    if (sl_ack33 = '1') then
                         sl_req33 <= '0';
                         State <= WAIT_CLR;
                     end if;
                 -- Last part of the handshake. Waiting until all handshake signals are going to 0, set busy to '0' (data sender can send new data). Go back to IDLE.
                 when WAIT_CLR =>
-                    if sl_ack33 = '0' then
+                    if (sl_ack33 = '0') then
                         sl_busy <= '0';
                         State <= IDLE;
                     end if;
@@ -114,14 +114,14 @@ begin
     -- 100Mhz process, responsible for laching the config data to the outputs and sending a load signal to the signal generator.
     fast_clock_data_latch : process (isl_clk100, isl_arst100_n)
     begin
-        if isl_arst100_n = '0' then
+        if (isl_arst100_n = '0') then
             sl_load <= '0';
             sl_req100_d <= '0';
             oslv32_freq_ch0 <= (others => '0');
             oslv32_duty_ch0 <= (others => '0');
             oslv32_freq_ch1 <= (others => '0');
             oslv32_duty_ch1 <= (others => '0');
-        elsif rising_edge(isl_clk100) then
+        elsif (rising_edge(isl_clk100)) then
             sl_req100_d <= sl_req100;                           -- remember last cycle's value
             sl_load <= '0'; 
             if (sl_req100 = '1') and (sl_req100_d = '0') then   -- rising edge detected -> send the data to the output, set load = '1' to instruct the generators that data on the outputs is valid and ready.
@@ -138,12 +138,12 @@ begin
     -- Second part of the handshake, instructing the slow domain that data was received and sent.
     ack_back_to_slow : process (isl_clk100, isl_arst100_n)
     begin
-        if isl_arst100_n = '0' then
+        if (isl_arst100_n = '0') then
             sl_ack100 <= '0';
-        elsif rising_edge(isl_clk100) then
+        elsif (rising_edge(isl_clk100)) then
             if (sl_load = '1') then
                sl_ack100 <= '1';
-            elsif sl_req100 = '0' then
+            elsif (sl_req100 = '0') then
                 sl_ack100 <= '0';
             end if;
         end if;
