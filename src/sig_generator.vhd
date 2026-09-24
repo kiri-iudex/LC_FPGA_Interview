@@ -48,23 +48,23 @@ begin
   -- Process responsible for updating the comparison registers.
   update_proc : process(isl_clk, isl_arst_n)
   begin
-      if isl_arst_n = '0' then
+      if (isl_arst_n = '0') then
         sl_update_ready <= '0';
         sl_P_active <= std_logic_vector(to_unsigned(P_DEFAULT, 32));
         sl_H_active <= (others => '0');
         sl_P_pending <= std_logic_vector(to_unsigned(P_DEFAULT, 32));
         sl_H_pending <= (others => '0');
 
-      elsif rising_edge(isl_clk) then
+      elsif (rising_edge(isl_clk)) then
         -- If a data update is available and the signal generator has finshed outputting one period => load the new config data into the comparison registers and deassert the update flag.
-        if sl_update_ready = '1' and sl_period_end = '1' then
+        if (sl_update_ready = '1') and (sl_period_end = '1') then
           sl_P_active <= sl_P_pending;
           sl_H_active <= sl_H_pending;
           sl_update_ready <= '0';
         end if;
 
         -- When new config data is available on the bus => load the data into internal staging registers and set the "update ready" flag.
-        if isl_load = '1' then
+        if (isl_load = '1') then
           sl_P_pending <= islv32_freq;
           sl_H_pending <= islv32_duty_cycle;
           sl_update_ready <= '1';
@@ -74,10 +74,10 @@ begin
 
   counter_proc : process(isl_clk, isl_arst_n)
   begin
-    if isl_arst_n = '0' then 
+    if (isl_arst_n = '0') then 
       sl_count_pwm <= (others => '0');
     elsif rising_edge(isl_clk) then 
-      if sl_period_end = '1' then
+      if (sl_period_end = '1') then
         sl_count_pwm <= (others => '0');       -- wrap around the counter
       else
         sl_count_pwm <= std_logic_vector(unsigned(sl_count_pwm) + 1);

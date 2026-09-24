@@ -31,9 +31,9 @@ architecture rtl of sync_2ff is
 begin
   process(isl_clk, isl_arst_n)
   begin
-    if isl_arst_n = '0' then
+    if (isl_arst_n = '0') then
       slv2_sync_ff <= (others => '0');
-    elsif rising_edge(isl_clk) then
+    elsif (rising_edge(isl_clk)) then
       slv2_sync_ff(0) <= isl_d;         -- 1st stage: metastability possbile
       slv2_sync_ff(1) <= slv2_sync_ff(0);   -- 2nd stage: stable signal
     end if;

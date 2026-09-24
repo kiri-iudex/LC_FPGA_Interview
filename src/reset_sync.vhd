@@ -30,9 +30,9 @@ architecture rtl of reset_sync is
 begin
   process(isl_clk, isl_async_rst_n)
   begin
-    if isl_async_rst_n = '0' then          -- asynchronous assert
+    if (isl_async_rst_n = '0') then          -- asynchronous assert
       slv2_ff <= (others => '0');
-    elsif rising_edge(isl_clk) then        -- synchronous de-assert, delayed to avoid metastability
+    elsif (rising_edge(isl_clk)) then        -- synchronous de-assert, delayed to avoid metastability
       slv2_ff(0) <= '1';
       slv2_ff(1) <= slv2_ff(0);
     end if;
